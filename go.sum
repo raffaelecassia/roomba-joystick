@@ -1,0 +1,8 @@
+github.com/ardnew/oibot v0.0.0-20191124223527-4e983500122e h1:XO7seOrlMaaTrG+FAAevG2ulevdHKv3bFQSk/OT/r94=
+github.com/ardnew/oibot v0.0.0-20191124223527-4e983500122e/go.mod h1:wvkV3EGb+cYJWhkEB/w8fOasVWTZF0FmPj+qtrChHao=
+github.com/splace/joysticks v0.0.0-20180907185707-7416f8bb58bd h1:WO95lkUpx1EbYOnppBa8i/fEY6t2itFxK5LCCRcgzKQ=
+github.com/splace/joysticks v0.0.0-20180907185707-7416f8bb58bd/go.mod h1:PQPCtmjcD4hfFT4yHSY7zomN8fvov8fFvQWYSth8L34=
+github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07 h1:UyzmZLoiDWMRywV4DUYb9Fbt8uiOSooupjTq10vpvnU=
+github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07/go.mod h1:kDXzergiv9cbyO7IOYJZWg1U88JhDg3PB6klq9Hg2pA=
+golang.org/x/sys v0.0.0-20200409092240-59c9f1ba88fa h1:mQTN3ECqfsViCNBgq+A40vdwhkGykrrQlYe3mPj6BoU=
+golang.org/x/sys v0.0.0-20200409092240-59c9f1ba88fa/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
