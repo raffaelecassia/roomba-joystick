@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
@@ -18,6 +17,7 @@ func quitme() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	<-c
 	log.Println("QUIT")
+	time.Sleep(time.Millisecond * 250)
 	roomba.DriveStop()
 	roomba.Stop()
 	os.Exit(0)
@@ -25,17 +25,14 @@ func quitme() {
 
 var roomba *oibot.OIBot
 
-const opcPWMMotors oibot.OpCode = 144
-
 func main() {
 
 	go quitme()
 
-	// roombaInfoLog := log.New(os.Stdout, "", log.LstdFlags)
-	roombaInfoLog := log.New(ioutil.Discard, "", log.LstdFlags)
-	roombaErrLog := log.New(os.Stdout, "ROOMBA ERROR! ", log.LstdFlags)
-
+	roombaInfoLog := log.New(os.Stdout, "", log.LstdFlags)
+	roombaErrLog := log.New(os.Stdout, "", log.LstdFlags)
 	roomba = oibot.MakeOIBot(roombaInfoLog, roombaErrLog, false, "/dev/ttyUSB0", 115200, oibot.DefaultReadTimeoutMS)
+
 	time.Sleep(time.Second * 1)
 	roomba.Safe()
 
@@ -52,107 +49,67 @@ func main() {
 
 	// get/assign channels for specific events
 	b1press := device.OnClose(1)
-	b3press := device.OnClose(3)
-	bOptionpress := device.OnClose(10)
 	h1move := device.OnMove(1)
-	h2move := device.OnMove(2)
+	h2move := device.OnMove(3)
 
-	var hpos Joysticks.CoordsEvent
-	var hpos2 Joysticks.CoordsEvent
+	// var hpos Joysticks.CoordsEvent
+	var left, right int16
 
 	// start feeding OS events onto the event channels.
 	go device.ParcelOutEvents()
-
-	brushes := false
 
 	go func() {
 		for {
 			select {
 			case <-b1press:
 				log.Println("button #1 pressed")
-				if brushes {
-					roomba.Write(opcPWMMotors, uint8(0), uint8(0), uint8(0))
-					brushes = false
-				} else {
-
-					roomba.Write(opcPWMMotors, uint8(127), uint8(127), uint8(127))
-					brushes = true
-				}
-
-			case <-b3press:
-				log.Println("button #3 pressed")
-				roomba.SeekDock()
-
-			case <-bOptionpress:
-				log.Println("RESET")
-				roomba.DriveStop()
-				time.Sleep(time.Millisecond * 100)
-				roomba.Stop()
-				time.Sleep(time.Millisecond * 500)
-				roomba.Start()
-				time.Sleep(time.Millisecond * 500)
-				roomba.Safe()
-
 			case h := <-h1move:
-				hpos = h.(Joysticks.CoordsEvent)
-
+				hpos := h.(Joysticks.CoordsEvent)
+				left = int16(hpos.Y * -300)
 			case h := <-h2move:
-				hpos2 = h.(Joysticks.CoordsEvent)
+				hpos := h.(Joysticks.CoordsEvent)
+				right = int16(hpos.X * -300)
 			}
 		}
 	}()
 
-	var speed, lastspeed, radius, lastradius, tmp, sign int16
-	var lastrotate float32
+	var lastleft, lastright int16
 
 	for {
-		tmp = int16(hpos2.Y * 100) // [0, +100]
-		if tmp != 0 {
-			if tmp > 0 {
-				sign = -1
-			} else {
-				sign = 1
-				tmp = tmp * -1
-			}
-			radius = int16(mappete(int(tmp), 0, 100, 250, 100)) * sign
-		} else {
-			radius = 0
+
+		// log.Println(left, right)
+
+		if left != lastleft || right != lastright {
+			roomba.DriveWheels(right, left)
 		}
 
-		speed = int16(hpos.Y * -500)
-
-		if speed != 0 && (speed != lastspeed || radius != lastradius) {
-			if speed != lastspeed {
-				lastspeed = speed
-			}
-			if radius != lastradius {
-				lastradius = radius
-			}
-			// log.Println(lastspeed, lastradius)
-			roomba.Drive(lastspeed, lastradius)
-		}
-
-		if speed != lastspeed && speed == 0 {
-			lastspeed = 0
-			lastradius = 0
+		if lastleft != 0 && lastright != 0 && left == 0 && right == 0 {
 			log.Println("stop")
 			roomba.DriveStop()
 		}
 
-		if speed == 0 && lastrotate != hpos2.Y {
-			lastrotate = hpos2.Y
-			l := int16(hpos2.Y * 500)
-			r := int16(hpos2.Y * -500)
-			log.Println("ROTATE", l, r)
-			roomba.DriveWheels(r, l)
+		lastleft = left
+		lastright = right
 
-		}
+		// if left != 0 && right != 0 && (left != lastleft || right != lastright) {
+		// 	if left != lastleft {
+		// 		lastleft = left
+		// 	}
+		// 	if right != lastright {
+		// 		lastright = right
+		// 	}
+		// 	log.Println(lastleft, lastright)
+		// 	roomba.Drive(lastleft, lastright)
+		// }
 
-		time.Sleep(time.Millisecond * 150)
+		// if speed != lastspeed && speed == 0 {
+		// 	lastspeed = 0
+		// 	lastradius = 0
+		// 	log.Println("stop")
+		// 	roomba.DriveStop()
+		// }
+
+		time.Sleep(time.Millisecond * 100)
 	}
 
-}
-
-func mappete(x int, inmin int, inmax int, outmin int, outmax int) int {
-	return (x-inmin)*(outmax-outmin)/(inmax-inmin) + outmin
 }
